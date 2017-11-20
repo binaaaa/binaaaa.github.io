@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title></title>
+		<style type="text/css">
+			body {
+				margin: 10px;
+			}
+		</style>
+		<script type="text/javascript">
+			function idol(team, name, atk, def, luck) {
+				this.team = team;
+				this.name = name;
+				this.atk = atk;
+				this.def = def;
+				this.luck = luck;
+			}
+
+			var Idol = new Array(7);
+			Idol[0] = new idol("塞纳河 恩兔", "小鞠", 5, 3, 1);
+			Idol[1] = new idol("塞纳河 恩兔", "李发卡", 5, 2, 2);
+			Idol[2] = new idol("塞纳河 恩兔", "婷婷", 4, 4, 1);
+			Idol[3] = new idol("塞纳河 恩兔", "冯二狗", 4, 3, 2);
+			Idol[4] = new idol("塞纳河 恩兔", "陆lisa", 3, 5, 1);
+			Idol[5] = new idol("塞纳河 恩兔", "曾老师", 6, 0, 3);
+			Idol[6] = new idol("塞纳河 恩兔", "赵奥", 4, 5, 1);
+
+			var context1;
+			var context2;
+			var isWhite = true; //设置是否该轮到白棋
+			var isWell = false; //设置该局棋盘是否赢了，如果赢了就不能再走了
+			var isAtk = true; //check is my turn
+			var allowPlay = true; //是否开始
+			var host;
+			var myidol;
+			var enemyidol;
+			var last_x = -1;
+			var last_y = -1;
+			var x;
+			var y;
+
+			var chessFlag1 = new Array(5);
+			var chessFlag2 = new Array(5);
+			var chessData = new Array(5); //这个为棋盘的二维数组用来保存棋盘信息，初始化0为没有走过的，1为白棋走的，2为黑棋走的
+			for(var x = 0; x < 5; x++) {
+				chessFlag1[x] = new Array(5);
+				chessFlag2[x] = new Array(5);
+				chessData[x] = new Array(5);
+				for(var y = 0; y < 5; y++) {
+					chessData[x][y] = x + 1;
+					chessFlag1[x][y] = 0;
+					chessFlag2[x][y] = 0;
+				}
+			}
+
+			function randomData(chessData) { //随机打乱数组
+				var temp;
+				var xr;
+				var yr;
+				for(var x = 0; x < 5; x++) {
+					for(var y = 0; y < 5; y++) {
+						xr = Math.floor(Math.random() * 5);
+						yr = Math.floor(Math.random() * 5);
+						temp = chessData[xr][yr];
+						chessData[xr][yr] = chessData[x][y];
+						chessData[x][y] = temp;
+					}
+				}
+			}
+
+			function fight() {
+				randomData(chessData); //打乱数组
+				loadData(); //加载数据
+				context1 = document.getElementById("canvas1").getContext("2d"); //创建画布
+				context2 = document.getElementById("canvas2").getContext("2d");
+				drawRect(context1, "white"); //画棋盘
+				drawRect(context2, "yellow");
+				addText("--我方攻击回合--");
+			}
+
+			function drawRect(context, color) { //页面加载完毕调用函数，初始化棋盘
+				context.fillStyle = color;
+				context.fillRect(0, 0, 300, 300);
+				context.strokeStyle = "black"
+				for(var i = 0; i <= 300; i += 60) { //绘制棋盘的线
+					context.beginPath();
+					context.moveTo(0, i);
+					context.lineTo(300, i);
+					context.closePath();
+					context.stroke();
+
+					context.beginPath();
+					context.moveTo(i, 0);
+					context.lineTo(i, 300);
+					context.closePath();
+					context.stroke();
+				}
+			}
+
+			function loadData() { //载入偶像资料
+				myidol = Idol[0];
+				enemyidol = Idol[1];
+				document.getElementById("myname").innerHTML = myidol.name;
+				document.getElementById("myteam").innerHTML = myidol.team;
+				document.getElementById("myattribute").innerHTML = "攻击：" + myidol.atk + " 防守：" + myidol.def;
+				document.getElementById("myattribute2").innerHTML = "幸运：" + myidol.luck;
+
+				document.getElementById("enemyname").innerHTML = enemyidol.name;
+				document.getElementById("enemyteam").innerHTML = enemyidol.team;
+				document.getElementById("enemyattribute").innerHTML = "攻击：" + enemyidol.atk + " 防守：" + enemyidol.def;
+				document.getElementById("enemyattribute2").innerHTML = "幸运：" + enemyidol.luck;
+			}
+
+			function chooseChess1(e) { //选攻击棋盘位置
+				if(isWell == true) {
+					alert("已经结束了，如果需要重新玩，请刷新");
+					return;
+				}
+				//如果是未揭开则选定棋盘
+				if(last_x != -1 && last_y != -1 && chessFlag1[x][y] == 0) {
+					context1.fillStyle = "white";
+					context1.fillRect(x * 60 + 1, y * 60 + 1, 58, 58);
+				} //如果选定非已解开的棋盘则清除上一次选定的
+				x = parseInt((e.clientX - 10) / 60);
+				y = parseInt((e.clientY - 135) / 60);
+				if(chessFlag1[x][y] != 1) {
+					if(x >= 0 && x < 5 && y >= 0 && y < 5) {
+						context1.strokeStyle = "red";
+						context1.lineWidth = 4;
+						context1.beginPath();
+						context1.moveTo(x * 60 + 3, y * 60 + 3);
+						context1.lineTo(x * 60 + 3, y * 60 + 57);
+						context1.lineTo(x * 60 + 57, y * 60 + 57);
+						context1.lineTo(x * 60 + 57, y * 60 + 3);
+						context1.lineTo(x * 60 + 3, y * 60 + 3);
+						context1.closePath();
+						context1.stroke();
+						last_x = x;
+						last_y = y;
+						document.getElementById("atk").removeAttribute("disabled");
+					}
+				} else if(document.getElementById("atk").disabled != true) {
+					document.getElementById("atk").setAttribute("disabled", true);
+				}
+			}
+
+			function chooseChess2(e) { //选防守棋盘位置
+				if(isWell == true) {
+					alert("已经结束了，如果需要重新玩，请刷新");
+					return;
+				}
+				if(last_x != -1 && last_y != -1 && chessFlag2[x][y] == 0) {
+					context2.fillStyle = "yellow";
+					context2.clearRect(x * 60 + 1, y * 60 + 1, 58, 58);
+				} //如果选定非已解开的棋盘则清除上一次选定的
+				x = parseInt((e.clientX - 10) / 60);
+				y = parseInt((e.clientY - 135) / 60);
+				if(chessFlag2[x][y] != 1) {
+					if(x >= 0 && x < 5 && y >= 0 && y < 5) {
+						context2.strokeStyle = "red";
+						context2.lineWidth = 4;
+						context2.beginPath();
+						context2.moveTo(x * 60 + 3, y * 60 + 3);
+						context2.lineTo(x * 60 + 3, y * 60 + 57);
+						context2.lineTo(x * 60 + 57, y * 60 + 57);
+						context2.lineTo(x * 60 + 57, y * 60 + 3);
+						context2.lineTo(x * 60 + 3, y * 60 + 3);
+						context2.closePath();
+						context2.stroke();
+						last_x = x;
+						last_y = y;
+						document.getElementById("def").removeAttribute("disabled");
+					}
+				} else if(document.getElementById("def").disabled != true) {
+					document.getElementById("def").setAttribute("disabled", true);
+				}
+
+			}
+
+			function attack(e) { //攻击
+				if(chessFlag1[x][y] == 0) {
+					context1.fillStyle = "white";
+					context1.fillRect(x * 60 + 1, y * 60 + 1, 58, 58); //清除
+					context1.font = "50px Verdana";
+					context1.fillStyle = "black";
+					context1.fillText(chessData[x][y], 10 + x * 60, 50 + y * 60);
+					chessFlag1[x][y] = 1;
+					last_x = -1;
+					last_y = -1;
+					var damage = myidol.atk * chessData[x][y] - enemydefend(); //计算伤害
+					if(damage <= 0) damage = 1;
+					addText("我方攻击：" + myidol.atk + "×" + chessData[x][y]);
+					addText("敌方伤害：" + damage); //获取div对象
+					document.getElementById("enemyhp").innerHTML -= damage;
+					if(document.getElementById("enemyhp").innerHTML <= 0) { //游戏是否结束
+						document.getElementById("enemyhp").innerHTML = 0;
+						addText("---游戏结束---");
+						isWell = true;
+						window.confirm("恭喜你获得胜利！");
+					} else {
+						addText("--我方防守回合--");
+					}
+					document.getElementById("atk").setAttribute("disabled", true);
+					changeChess();
+				} //如果是未揭开的棋盘则揭开
+			}
+
+			function defend(e) { //防守
+				if(chessFlag2[x][y] == 0) {
+					context2.fillStyle = "yellow";
+					context2.fillRect(x * 60 + 1, y * 60 + 1, 58, 58); //清除
+					context2.font = "50px Verdana";
+					context2.fillStyle = "black";
+					context2.fillText(chessData[x][y], 10 + x * 60, 50 + y * 60);
+					chessFlag2[x][y] = 1;
+					last_x = -1;
+					last_y = -1;
+					var damage = enemyattack() - myidol.def * chessData[x][y]; //计算伤害
+					if(damage <= 0) damage = 1;
+					addText("我方防守：" + myidol.def + "×" + chessData[x][y]);
+					addText("我方伤害：" + damage); //获取div对象
+					document.getElementById("myhp").innerHTML -= damage;
+					if(document.getElementById("myhp").innerHTML <= 0) { //游戏是否结束
+						document.getElementById("myhp").innerHTML = 0;
+						addText("---游戏结束---");
+						isWell = true;
+						window.confirm("很可惜你输了！");
+					} else {
+						addText("--我方攻击回合--");
+					}
+					document.getElementById("def").setAttribute("disabled", true);
+					changeChess();
+				} //如果是未揭开的棋盘则揭开
+			}
+
+			function changeChess(e) { //交换棋盘
+				if(document.getElementById("canvas2").style.zIndex != "1") {
+					document.getElementById("canvas2").style.zIndex = "1";
+					document.getElementById("canvas1").style.zIndex = "0";
+				} else {
+					document.getElementById("canvas2").style.zIndex = "0";
+					document.getElementById("canvas1").style.zIndex = "1";
+				}
+			}
+
+			function enemyattack() {
+				var x = Math.floor(Math.random() * 5);
+				var y = Math.floor(Math.random() * 5);
+				while(chessFlag1[x][y] != 0) {
+					x = Math.floor(Math.random() * 5);
+					y = Math.floor(Math.random() * 5);
+				}
+				context1.font = "50px Verdana";
+				context1.fillStyle = "red";
+				context1.fillText(chessData[x][y], 10 + x * 60, 50 + y * 60);
+				chessFlag1[x][y] = 1;
+				addText("敌方攻击：" + enemyidol.atk + "×" + chessData[x][y] + "\n"); //获取div对象
+				return chessData[x][y] * enemyidol.atk;
+			}
+
+			function enemydefend() {
+				var x = Math.floor(Math.random() * 5);
+				var y = Math.floor(Math.random() * 5);
+				while(chessFlag2[x][y] != 0) {
+					x = Math.floor(Math.random() * 5);
+					y = Math.floor(Math.random() * 5);
+				}
+				context2.font = "50px Verdana";
+				context2.fillStyle = "red";
+				context2.fillText(chessData[x][y], 10 + x * 60, 50 + y * 60);
+				chessFlag2[x][y] = 1;
+				addText("敌方防守：" + enemyidol.def + "×" + chessData[x][y] + "\n"); //获取div对象		
+				return chessData[x][y] * enemyidol.def;
+			}
+
+			function addText(str) {
+				var textNode = document.createTextNode(str); //获取div对象
+				var divNode = document.getElementById("history"); //给div添加文本元素
+				divNode.appendChild(textNode);
+				var brNode = document.createElement("br");
+				divNode.appendChild(brNode);
+			}
+
+			var roomId = prompt("请输入房间号", ""); //房间号
+			host = document.location.host;
+			host = "ws://" + host + "/chess?roomId=" + roomId;
+			var webSocket = new WebSocket(host);
+			i = 0;
+			while(!webSocket.readyState) {
+				alert("请耐心等待游戏开始");
+				if(i > 5) {
+					alert("游戏链接失败");
+					break;
+				}
+				i++;
+			};
+
+			function sendStart() {
+				webSocket.send("connect|This is a new Client");
+			}
+
+			sendStart();
+
+			webSocket.onmessage = function(event) {
+				//alert("readMessage" + event.data);
+				onMessage(event)
+			};
+
+			function onMessage(event) {
+				//alert(event.data)
+				result = JSON.parse(event.data);
+				if(result.success == false) {
+					alert("系统异常" + event.data);
+				}
+				var action = result.model;
+				if(action.code == "Start") {
+					startGame(action);
+				} else if(action.code == "Chess") {
+					recieveChessMsg(action);
+				}
+			}
+
+			function startGame(action) {
+				allowPlay = true;
+				if(action.detail == "White") {
+					myTurn = true;
+				} else {
+					myTurn = false;
+				}
+			}
+
+			function sendChessMsg(color, x, y) {
+				var chessAction = new Object();
+				chessAction.color = color;
+				chessAction.x = x;
+				chessAction.y = y;
+				var chessInfoStr = JSON.stringify(chessAction);
+				webSocket.send("chess" + chessInfoStr);
+			}
+
+			function recieveChessMsg(action) {
+				if(action.color == "White") {
+					drawChess(1, action.x, action.y);
+					if(isWhite == true) {
+						isWhite = false;
+					} else {
+						isWhite = true;
+					}
+					myTurn = !myTurn;
+					changeTip();
+				} else {
+					drawChess(2, action.x, action.y);
+					if(isWhite == false) {
+						isWhite = true;
+					} else {
+						isWhite = false;
+					}
+					myTurn = !myTurn;
+					changeTip();
+				}
+			}
+		</script>
+	</head>
+
+	<body onload="fight()">
+		<div id="mainbody" style="float:left">
+			<div id="enemyidol" style="width:296px;height:96px;border:2px solid #c3c3c3">
+				<div id="enemyname" style="float:left;width:94px;height:94px;border:1px solid red">
+				</div>
+				<div id="enemyteam">
+				</div>
+				<div id="enemyattribute">
+				</div>
+				<div id="enemyattribute2">
+				</div>
+			</div>
+			<div id="enemyhp">
+				30
+			</div>
+			<canvas id="canvas2" onmousedown="chooseChess2(event)" width="300px" height="300px" style="position: absolute;top:135px;left:10px">
+       		</canvas>
+			<canvas id="canvas1" onmousedown="chooseChess1(event)" width="300px" height="300px" style="position: absolute;top:135px;left:10px">
+       		</canvas>
+			<div style="position: relative;top:305px">
+				<div>
+					<button id="lucky" disabled="true">子杰的眷顾</button>
+					<button id="def" disabled="true" onclick="defend(event)">防守</button>
+					<button id="atk" disabled="true" onclick="attack(event)">攻击</button>
+					<button id="defchess" onmousedown="changeChess(event)" onmouseup="changeChess(event)">防守棋盘</button>
+				</div>
+
+				<div id="myhp">
+					30
+				</div>
+				<div id="myidol" style="width:296px;height:96px;border:2px solid #c3c3c3">
+					<div id="myname" style="float:left;width:94px;height:94px;border:1px solid red">
+					</div>
+					<div id="myteam">
+					</div>
+					<div id="myattribute">
+					</div>
+					<div id="myattribute2">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="history" style="float:left;overflow: scroll;width:166px;height:576px;border:2px solid #c3c3c3 ">
+		</div>
+	</body>
+
+</html>
