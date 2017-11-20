@@ -101,8 +101,8 @@
 			}
 
 			function loadData() { //载入偶像资料
-				myidol = Idol[0];
-				enemyidol = Idol[1];
+				myidol = Idol[Math.floor(Math.random() * 7)];
+				enemyidol = Idol[Math.floor(Math.random() * 7)];
 				document.getElementById("myname").innerHTML = myidol.name;
 				document.getElementById("myteam").innerHTML = myidol.team;
 				document.getElementById("myattribute").innerHTML = "攻击：" + myidol.atk + " 防守：" + myidol.def;
@@ -246,6 +246,11 @@
 				}
 			}
 
+			function doubleChangeChess(e) { //看一眼另一个棋盘
+				changeChess();
+				setTimeout("changeChess()", 200);
+			}
+
 			function enemyattack() {
 				var x = Math.floor(Math.random() * 5);
 				var y = Math.floor(Math.random() * 5);
@@ -307,10 +312,10 @@
        		</canvas>
 			<div style="position: relative;top:305px">
 				<div>
-					<button id="lucky" disabled="true">子杰的眷顾</button>
+					<button id="lucky" disabled="true">眷顾</button>
 					<button id="def" disabled="true" onclick="defend(event)">防守</button>
 					<button id="atk" disabled="true" onclick="attack(event)">攻击</button>
-					<button id="defchess" onmousedown="changeChess(event)" onmouseup="changeChess(event)">防守棋盘</button>
+					<button id="defchess" onclick="doubleChangeChess(event)">防守棋盘</button>
 				</div>
 
 				<div id="myhp">
@@ -328,7 +333,7 @@
 				</div>
 			</div>
 		</div>
-		<div id="history" style="float:left;overflow: scroll;width:166px;height:576px;border:2px solid #c3c3c3 ">
+		<div id="history" style="position:absolute;top:10px;left:310px; overflow: scroll;width:166px;height:576px;border:2px solid #c3c3c3 ">
 		</div>
 	</body>
 
